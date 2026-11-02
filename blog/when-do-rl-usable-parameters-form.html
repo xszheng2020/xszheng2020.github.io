@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>When do a language model's RL-usable parameters form?</title>
+<style>
+:root{
+  --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,.10); --accent:#2a78d6; --rand:#6250d6; --rule:#e1e0d9;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --plane:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+  --border:rgba(255,255,255,.12); --accent:#3987e5; --rand:#9085e9; --rule:#2c2c2a;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  line-height:1.72;font-size:17px;}
+[data-lang="en"] [data-l="zh"]{display:none}
+[data-lang="zh"] [data-l="en"]{display:none}
+.wrap{max-width:min(1200px,calc(100vw - 36px));margin:0 auto;padding:56px 22px 96px}
+header.hd{margin-bottom:10px}
+.kicker{font-size:13px;letter-spacing:.04em;color:var(--accent);font-weight:600;margin-bottom:14px}
+h1{font-size:33px;line-height:1.22;margin:0 0 14px;letter-spacing:-.01em;font-weight:700}
+.sub{font-size:19px;color:var(--ink2);margin:0 0 20px}
+.meta{font-size:14px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;
+  padding-bottom:22px;border-bottom:1px solid var(--rule);margin-bottom:8px}
+h2{font-size:23px;margin:52px 0 6px;letter-spacing:-.005em;font-weight:700}
+#appendix{scroll-margin-top:18px}
+h2 .n{color:var(--muted);font-weight:600;margin-right:10px;font-variant-numeric:tabular-nums}
+h3{font-size:18px;margin:30px 0 6px;font-weight:650}
+p{margin:14px 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+a:hover{border-bottom-color:currentColor}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;
+  background:color-mix(in srgb,var(--ink) 7%,transparent);padding:.08em .38em;border-radius:5px}
+strong{font-weight:680}
+.lede{font-size:18px}
+.sumbox{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 24px;margin:26px 0}
+.sumbox h3{margin:0 0 6px;font-size:14px;letter-spacing:.03em;color:var(--accent)}
+.sumbox p{margin:9px 0;font-size:16.5px}
+.callout{margin:18px 0 8px;padding:14px 18px;border-radius:12px;
+  background:color-mix(in srgb,#e8a317 18%,var(--surface));
+  border:1px solid color-mix(in srgb,#e8a317 55%,var(--border))}
+.callout p{margin:0}
+.fig{margin:16px 0}
+.fig .plate{background:#fff;border:1px solid var(--border);border-radius:12px;padding:6px 8px 4px;overflow:hidden}
+.cap{font-size:14px;color:var(--ink2);margin-top:6px}
+.cap b{color:var(--ink)}
+.chartcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px 12px 2px;margin:8px 0}
+.chartrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 16px}
+.chartrow .chartcard{margin:0;padding:8px 8px 2px;min-width:0}
+.chartrow .chart-h{flex-direction:column;align-items:flex-start;gap:1px}
+.chartrow .chart-h .t{font-size:14px}
+.chartrow .chart-h .s{font-size:11.5px;line-height:1.35}
+.chartrow .legend{font-size:11.5px;gap:4px 10px}
+@media (max-width:860px){
+  .chartrow{grid-template-columns:1fr}
+}
+.chart-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.chart-h .t{font-weight:650;font-size:15px}
+.chart-h .s{font-size:13px;color:var(--ink2)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin:2px 0 0}
+.legend .it{display:flex;align-items:center;gap:7px}
+.legend .sw{width:22px;height:0;border-top-width:3px;border-top-style:solid;border-radius:3px}
+.plot{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);
+  border-radius:9px;padding:8px 10px;font-size:12.5px;box-shadow:0 6px 24px rgba(0,0,0,.14);
+  opacity:0;transition:opacity .08s;min-width:150px;z-index:5}
+.tip .ts{font-weight:650;margin-bottom:5px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.tip .row{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tip .row .nm{display:flex;align-items:center;gap:6px;color:var(--ink2)}
+.tip .row .dot{width:9px;height:9px;border-radius:50%}
+.tip .row .v{color:var(--ink);font-weight:600}
+table{border-collapse:collapse;width:100%;margin:22px 0;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--ink2);font-weight:600;font-size:13px;border-bottom:1.5px solid #c3c2b7}
+tbody tr:last-child td{border-bottom:none}
+td .hl{font-weight:700}
+.note{font-size:14.5px;color:var(--ink2);border-left:3px solid var(--rule);padding:4px 0 4px 16px;margin:18px 0}
+.ctl{position:fixed;top:14px;right:14px;z-index:20;display:flex;gap:8px}
+.ctl button{background:var(--surface);border:1px solid var(--border);color:var(--ink2);
+  border-radius:999px;padding:7px 13px;font-size:13px;cursor:pointer;font-family:inherit}
+.ctl button:hover{color:var(--ink)}
+.foot{margin-top:60px;padding-top:22px;border-top:1px solid var(--rule);font-size:14px;color:var(--muted)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;
+  background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+@media (max-width:560px){h1{font-size:26px}body{font-size:16px}.wrap{padding:40px 16px 70px}}
+</style>
+</head>
+<body>
+<div class="ctl">
+  <button id="langbtn">中文</button>
+  <button id="themebtn">◐</button>
+</div>
+<div class="wrap">
+
+<header class="hd">
+  <div class="kicker" data-l="zh">研究笔记</div>
+  <div class="kicker" data-l="en">Research note</div>
+  <h1 data-l="zh">语言模型里，RL 真正用到的参数是什么时候形成的？</h1>
+  <h1 data-l="en">When do a language model's RL-usable parameters form?</h1>
+  <p class="sub" data-l="zh">在 SmolLM3-3B 上，RL 最终用到的那一小部分参数，在预训练早期就已经就位，远早于模型能够完成任务之前。</p>
+  <p class="sub" data-l="en">In SmolLM3-3B, the small set of parameters that RL ends up using is already in place
+  early in pretraining, well before the model can do the task.</p>
+  <div class="meta" data-l="zh"><span>SmolLM3-3B · 14 个 checkpoint</span><span>·</span><span>Dr.GRPO 数学 RL，MATH-500 / GSM8K</span><span>·</span><span>on-policy 对角 Fisher</span></div>
+  <div class="meta" data-l="en"><span>SmolLM3-3B · 14 checkpoints</span><span>·</span><span>Dr.GRPO on math, MATH-500 / GSM8K</span><span>·</span><span>on-policy diagonal Fisher</span></div>
+</header>
+
+<p class="lede" data-l="zh">对语言模型做 RL，其实只改动了很少的权重。最近的工作（<a href="https://arxiv.org/abs/2609.36262">arXiv:2609.36262</a>）表明：冻结大约 99% 的参数，只训练按 <em>Fisher 信息</em>排序的前 1%，也就是 on-policy 对角 Fisher <code>F_i = E[(&part;<sub>i</sub> log &pi;)&sup2;]</code>（衡量 RL 梯度能把每个权重推动多少），仍然能拿到全参数 RL 的大部分收益。</p>
+<p class="lede" data-l="en">RL on a language model changes very few of its weights. Recent work
+(<a href="https://arxiv.org/abs/2609.36262">arXiv:2609.36262</a>) shows that you can freeze about 99%
+of the parameters and train only the top 1% ranked by <em>Fisher information</em>, the on-policy
+diagonal <code>F_i = E[(&part;<sub>i</sub> log &pi;)&sup2;]</code> that measures how much the RL
+gradient can move each weight, and still get most of the gain from full RL.</p>
+<div class="callout">
+<p data-l="zh">他们证明的是：Fisher 小，期望更新就小，所以冻掉低 Fisher 的坐标损失不大。这解释了更新为什么小，也解释了为什么只训练很少的坐标就够用。它没有解释敏感度为什么稀疏：为什么大的 Fisher 只落在很少的坐标上，而不是散开。</p>
+<p data-l="en">What they prove is that a small Fisher means a small expected update, so freezing the low-Fisher coordinates costs little. That explains why the updates are small, and why training a few coordinates is enough. It does not explain why the sensitivity is sparse: why the large Fisher values sit on so few coordinates instead of spreading out.</p>
+</div>
+<p data-l="zh">剩下的问题在<em>预训练</em>：这前 1% 的位置，是模型学会推理之后才出现的，还是早就在了。</p>
+<p data-l="en">The remaining question is about <em>pretraining</em>: do these top-1% positions appear only after the model learns to reason, or are they already there?</p>
+
+<div class="sumbox">
+  <h3 data-l="zh">结论</h3>
+  <h3 data-l="en">Summary</h3>
+  <p data-l="zh">1. 这前 1% 的 Fisher 位置在第一阶段预训练就定下来，之后基本不再移动。到 8T token 时覆盖率已经到约 94%，比学习率开始衰减还早 2T。所以这是收敛，不是退火带来的假象。</p>
+  <p data-l="en">1. The top-1% Fisher positions are set during stage 1 of pretraining and then stop moving.
+  Coverage reaches about 94% by 8T tokens, 2T before the learning rate starts to decay. That is
+  convergence, not an artifact of annealing.</p>
+  <p data-l="zh">2. 同样 0.4% 预算下，Fisher 选的位置 recover 了约 89%，而同预算的随机对照只有约 34–38%。起作用的是 Fisher 挑出的具体位置，不是预算或布局。</p>
+  <p data-l="en">2. At the same 0.4% budget, the Fisher-selected positions recover about 89%, while a
+  same-budget random control reaches only about 34–38%. What matters is the specific positions Fisher
+  picks, not the budget or the layout.</p>
+  <p data-l="zh">3. 第一阶段结束时挑出的 Fisher 位置，来自一个完全做不了数学 RL 的 checkpoint。拿去训练后来那个已经会做数学的模型，recovery 是 85%，它自己挑的是 96%。位置在能力出现之前就已经标出来了。</p>
+  <p data-l="en">3. The Fisher positions picked at the end of stage 1 come from a checkpoint that cannot do math RL at all.
+  Used to train the later model that can, they recover 85%, against 96% for the positions that later model picks for itself.
+  The positions are identified before the capability exists.</p>
+</div>
+
+<h2 data-l="zh"><span class="n">1</span>实验设计，以及它如何绕开地板效应</h2>
+<h2 data-l="en"><span class="n">1</span>The experiment, and how it avoids the floor</h2>
+<p data-l="zh">直接对每个早期 checkpoint 做 RL 会撞上地板效应：模型还不会做题，RL 没有信号，也就看不出参数几何。所以把两件事拆开：位置从哪个 checkpoint 来，以及在哪个模型上训练。被训练的模型固定为 SmolLM3 做完推理中训、已经会做数学的那个 checkpoint，下文称<b>中训模型</b>。只变一件事：用哪个 checkpoint 的 Fisher 来挑那 1%。优化器和数据不变。</p>
+<p data-l="en">Running RL on each early checkpoint hits a floor: the model cannot do the task, so RL has no signal, and you learn nothing about the parameter geometry. Split the two questions — which checkpoint the positions come from, and which model is trained. The trained model is fixed to the SmolLM3 checkpoint after reasoning mid-training, the one that can already do math. Call it the <b>mid-trained model</b>. The only change is which checkpoint's Fisher picks the 1%. Same optimizer, same data.</p>
+<p data-l="zh">Fisher 的测法全程相同（800 条数学题，on-policy，fp32，全局前 1%）。每次 RL 也相同（Dr.GRPO，学习率 5e-7，4&times;8 条 rollout，weight decay 为 0，冻结的坐标才真的不动，共 1000 步）。</p>
+<p data-l="en">Fisher is measured the same way throughout (800 math prompts, on-policy, fp32, global top 1%). Every RL run is the same (Dr.GRPO, learning rate 5e-7, 4&times;8 rollouts, weight decay 0 so frozen coordinates stay frozen, 1000 steps).</p>
+
+<h2 data-l="zh"><span class="n">2</span>形成曲线</h2>
+<h2 data-l="en"><span class="n">2</span>The formation curve</h2>
+<p data-l="zh">沿 SmolLM3 预训练的 14 个 checkpoint，逐个问：中训模型的前 1% Fisher 坐标，有多少已经落在这个 checkpoint 自己的前 5% 里？随机初始化大约是 8%（图上加粗黑线，接近碰运气；虚线是严格的随机基线，覆盖率等于 k）。结果很早就饱和：</p>
+<p data-l="en">Along 14 checkpoints of SmolLM3 pretraining, ask how much of the mid-trained model's top 1% Fisher already sits in that checkpoint's own top 5%. Random initialization is about 8% (bold black line, close to chance; the dashed line is the exact random baseline, coverage = k). The curve saturates early:</p>
+
+<div class="fig">
+  <div class="plate"><svg style="width:100%;height:auto;display:block" width="880" height="540" viewBox="0 0 880 540" font-family="system-ui,sans-serif" ><text x="72" y="26" font-size="16" font-weight="600">How much of the mid-trained top 1% each checkpoint already covers</text><text x="72" y="44" font-size="12" fill="#666">init≈chance; curves rise and converge; by top-5% all trained ckpts ≥94% (random dashed = k%)</text><line x1="72" y1="476" x2="650" y2="476" stroke="#eee"/><text x="64" y="480" font-size="12" fill="#555" text-anchor="end">0%</text><line x1="72" y1="392" x2="650" y2="392" stroke="#eee"/><text x="64" y="396" font-size="12" fill="#555" text-anchor="end">20%</text><line x1="72" y1="308" x2="650" y2="308" stroke="#eee"/><text x="64" y="312" font-size="12" fill="#555" text-anchor="end">40%</text><line x1="72" y1="224" x2="650" y2="224" stroke="#eee"/><text x="64" y="228" font-size="12" fill="#555" text-anchor="end">60%</text><line x1="72" y1="140" x2="650" y2="140" stroke="#eee"/><text x="64" y="144" font-size="12" fill="#555" text-anchor="end">80%</text><line x1="72" y1="56" x2="650" y2="56" stroke="#eee"/><text x="64" y="60" font-size="12" fill="#555" text-anchor="end">100%</text><line x1="72" y1="56" x2="72" y2="476" stroke="#f6f6f6"/><text x="72" y="494" font-size="11" fill="#555" text-anchor="middle">0.1</text><line x1="130" y1="56" x2="130" y2="476" stroke="#f6f6f6"/><text x="130" y="494" font-size="11" fill="#555" text-anchor="middle">0.2</text><line x1="207" y1="56" x2="207" y2="476" stroke="#f6f6f6"/><text x="207" y="494" font-size="11" fill="#555" text-anchor="middle">0.5</text><line x1="265" y1="56" x2="265" y2="476" stroke="#f6f6f6"/><text x="265" y="494" font-size="11" fill="#555" text-anchor="middle">1</text><line x1="323" y1="56" x2="323" y2="476" stroke="#f6f6f6"/><text x="323" y="494" font-size="11" fill="#555" text-anchor="middle">2</text><line x1="399" y1="56" x2="399" y2="476" stroke="#f6f6f6"/><text x="399" y="494" font-size="11" fill="#555" text-anchor="middle">5</text><line x1="457" y1="56" x2="457" y2="476" stroke="#f6f6f6"/><text x="457" y="494" font-size="11" fill="#555" text-anchor="middle">10</text><line x1="515" y1="56" x2="515" y2="476" stroke="#f6f6f6"/><text x="515" y="494" font-size="11" fill="#555" text-anchor="middle">20</text><line x1="592" y1="56" x2="592" y2="476" stroke="#f6f6f6"/><text x="592" y="494" font-size="11" fill="#555" text-anchor="middle">50</text><line x1="650" y1="56" x2="650" y2="476" stroke="#f6f6f6"/><text x="650" y="494" font-size="11" fill="#555" text-anchor="middle">100</text><text x="361" y="524" font-size="13" text-anchor="middle">checkpoint top-k% (log)</text><text x="18" y="266" font-size="13" text-anchor="middle" transform="rotate(-90 18 266)">% of the mid-trained top 1% covered</text><polyline points="72.0,475.6 130.0,475.2 206.7,473.9 264.7,471.8 322.7,467.6 399.3,455.0 457.3,434.0 515.3,392.0 592.0,266.0 650.0,56.0" fill="none" stroke="#bbb" stroke-width="1.3" stroke-dasharray="5 4"/><polyline points="72.0,468.4 130.0,463.0 206.7,457.9 264.7,457.1 322.7,455.0 399.3,443.2 457.3,438.2 515.3,403.8 592.0,228.2 650.0,56.0" fill="none" stroke="#000000" stroke-width="3"/><line x1="668" y1="60" x2="688" y2="60" stroke="#000000" stroke-width="3"/><text x="693" y="64" font-size="11">init <tspan fill="#aaa">0</tspan> <tspan fill="#999">7.8</tspan></text><polyline points="72.0,465.5 130.0,452.1 206.7,413.8 264.7,359.2 322.7,294.6 399.3,210.1 457.3,158.5 515.3,125.3 592.0,84.6 650.0,56.0" fill="none" stroke="hsl(271,65%,45%)" stroke-width="1.8"/><line x1="668" y1="82" x2="688" y2="82" stroke="hsl(271,65%,45%)" stroke-width="1.8"/><text x="693" y="86" font-size="11">s1-40k <tspan fill="#aaa">0.094T</tspan> <tspan fill="#999">63.3</tspan></text><polyline points="72.0,462.1 130.0,446.2 206.7,402.1 264.7,342.0 322.7,277.3 399.3,193.8 457.3,143.4 515.3,110.6 592.0,79.5 650.0,56.0" fill="none" stroke="hsl(262,65%,45%)" stroke-width="1.8"/><line x1="668" y1="104" x2="688" y2="104" stroke="hsl(262,65%,45%)" stroke-width="1.8"/><text x="693" y="108" font-size="11">s1-80k <tspan fill="#aaa">0.19T</tspan> <tspan fill="#999">67.2</tspan></text><polyline points="72.0,459.6 130.0,442.0 206.7,392.8 264.7,329.4 322.7,257.6 399.3,170.2 457.3,122.4 515.3,96.3 592.0,72.4 650.0,56.0" fill="none" stroke="hsl(252,65%,45%)" stroke-width="1.8"/><line x1="668" y1="126" x2="688" y2="126" stroke="hsl(252,65%,45%)" stroke-width="1.8"/><text x="693" y="130" font-size="11">s1-160k <tspan fill="#aaa">0.38T</tspan> <tspan fill="#999">72.8</tspan></text><polyline points="72.0,455.4 130.0,436.5 206.7,382.3 264.7,314.7 322.7,234.9 399.3,151.3 457.3,108.5 515.3,86.7 592.0,67.8 650.0,56.0" fill="none" stroke="hsl(243,65%,45%)" stroke-width="1.8"/><line x1="668" y1="148" x2="688" y2="148" stroke="hsl(243,65%,45%)" stroke-width="1.8"/><text x="693" y="152" font-size="11">s1-320k <tspan fill="#aaa">0.76T</tspan> <tspan fill="#999">77.3</tspan></text><polyline points="72.0,452.1 130.0,432.3 206.7,374.4 264.7,299.6 322.7,213.9 399.3,132.9 457.3,96.3 515.3,77.0 592.0,62.7 650.0,56.0" fill="none" stroke="hsl(234,65%,45%)" stroke-width="1.8"/><line x1="668" y1="170" x2="688" y2="170" stroke="hsl(234,65%,45%)" stroke-width="1.8"/><text x="693" y="174" font-size="11">s1-640k <tspan fill="#aaa">1.5T</tspan> <tspan fill="#999">81.7</tspan></text><polyline points="72.0,449.5 130.0,429.0 206.7,368.9 264.7,289.1 322.7,198.4 399.3,119.8 457.3,88.8 515.3,72.0 592.0,60.6 650.0,56.0" fill="none" stroke="hsl(225,65%,45%)" stroke-width="1.8"/><line x1="668" y1="192" x2="688" y2="192" stroke="hsl(225,65%,45%)" stroke-width="1.8"/><text x="693" y="196" font-size="11">s1-1000k <tspan fill="#aaa">2.4T</tspan> <tspan fill="#999">84.8</tspan></text><polyline points="72.0,447.9 130.0,425.2 206.7,362.6 264.7,276.1 322.7,179.5 399.3,104.7 457.3,79.5 515.3,66.9 592.0,58.5 650.0,56.0" fill="none" stroke="hsl(215,65%,45%)" stroke-width="1.8"/><line x1="668" y1="214" x2="688" y2="214" stroke="hsl(215,65%,45%)" stroke-width="1.8"/><text x="693" y="218" font-size="11">s1-1600k <tspan fill="#aaa">3.8T</tspan> <tspan fill="#999">88.4</tspan></text><polyline points="72.0,447.0 130.0,423.1 206.7,359.7 264.7,270.2 322.7,169.0 399.3,93.4 457.3,71.5 515.3,61.9 592.0,57.3 650.0,56.0" fill="none" stroke="hsl(206,65%,45%)" stroke-width="1.8"/><line x1="668" y1="236" x2="688" y2="236" stroke="hsl(206,65%,45%)" stroke-width="1.8"/><text x="693" y="240" font-size="11">s1-2400k <tspan fill="#aaa">5.7T</tspan> <tspan fill="#999">91.1</tspan></text><polyline points="72.0,445.8 130.0,421.0 206.7,354.6 264.7,262.2 322.7,158.5 399.3,85.4 457.3,67.3 515.3,59.8 592.0,56.8 650.0,56.0" fill="none" stroke="hsl(197,65%,45%)" stroke-width="1.8"/><line x1="668" y1="258" x2="688" y2="258" stroke="hsl(197,65%,45%)" stroke-width="1.8"/><text x="693" y="262" font-size="11">s1-3000k <tspan fill="#aaa">7.1T</tspan> <tspan fill="#999">93.0</tspan></text><polyline points="72.0,444.1 130.0,418.5 206.7,349.2 264.7,252.1 322.7,148.8 399.3,82.0 457.3,66.1 515.3,59.8 592.0,56.8 650.0,56.0" fill="none" stroke="hsl(188,65%,45%)" stroke-width="1.8"/><line x1="668" y1="280" x2="688" y2="280" stroke="hsl(188,65%,45%)" stroke-width="1.8"/><text x="693" y="284" font-size="11">s1-3440k <tspan fill="#aaa">8.1T</tspan> <tspan fill="#999">93.8</tspan></text><polyline points="72.0,443.2 130.0,416.4 206.7,344.1 264.7,242.5 322.7,139.2 399.3,76.2 457.3,63.1 515.3,58.1 592.0,56.4 650.0,56.0" fill="none" stroke="hsl(178,65%,45%)" stroke-width="1.8"/><line x1="668" y1="302" x2="688" y2="302" stroke="hsl(178,65%,45%)" stroke-width="1.8"/><text x="693" y="306" font-size="11">stage2 <tspan fill="#aaa">10T</tspan> <tspan fill="#999">95.2</tspan></text><polyline points="72.0,438.2 130.0,407.1 206.7,318.1 264.7,218.1 322.7,135.4 399.3,76.6 457.3,62.3 515.3,57.7 592.0,56.4 650.0,56.0" fill="none" stroke="hsl(169,65%,45%)" stroke-width="1.8"/><line x1="668" y1="324" x2="688" y2="324" stroke="hsl(169,65%,45%)" stroke-width="1.8"/><text x="693" y="328" font-size="11">stage3 <tspan fill="#aaa">11.1T</tspan> <tspan fill="#999">95.1</tspan></text><polyline points="72.0,438.2 130.0,406.3 206.7,312.6 264.7,209.3 322.7,127.0 399.3,71.5 457.3,60.2 515.3,57.3 592.0,56.4 650.0,56.0" fill="none" stroke="hsl(160,65%,45%)" stroke-width="1.8"/><line x1="668" y1="346" x2="688" y2="346" stroke="hsl(160,65%,45%)" stroke-width="1.8"/><text x="693" y="350" font-size="11">lc <tspan fill="#aaa">11.2T</tspan> <tspan fill="#999">96.3</tspan></text></svg></div>
+  <div class="cap" data-l="zh"><b>形成得很早，而且停在学习率衰减之前。</b>每条线是一个 checkpoint 的前 k% Fisher（横轴为对数），对照中训模型的前 1%。第一个记录点（0.09T）覆盖率就到 63%，第一阶段内随 log(token) 上升，8T（第一阶段结束）饱和在约 94%。学习率要到 10T 才开始衰减，这些位置早了约 2T，之后第二阶段、第三阶段和长上下文都不再动。</div>
+  <div class="cap" data-l="en"><b>Formation is early, and it stops before the learning rate decays.</b> Each line is one
+  checkpoint's top-k% Fisher (log x-axis), scored against the mid-trained model's top 1%. Coverage is already 63% at the first logged step (0.09T), rises with log(tokens) through stage 1, and saturates near 94% at 8T, the end of stage 1. The learning rate does not start decaying until 10T, so the positions stop about 2T earlier and stay put through stage 2, stage 3, and long context.</div>
+</div>
+
+<p data-l="zh">前 1% 落在哪些模块上，见<a href="#appendix">附录</a>。</p>
+<p data-l="en">Which modules hold the top 1% is in the <a href="#appendix">appendix</a>.</p>
+
+<h2 data-l="zh"><span class="n">3</span>只要很小一批，但必须是对的那一批</h2>
+<h2 data-l="en"><span class="n">3</span>A tiny set is enough — but it has to be the right set</h2>
+<p data-l="zh">先看两件事：RL 实际要动多少参数，以及换成别的位置行不行。三条线：全参数 RL（上限）、0.4% 的 Fisher 骨架、以及同预算的随机位置。</p>
+<p data-l="en">Two checks: how many parameters RL actually has to move, and whether other positions would do. Three runs: full-parameter RL (the ceiling), a 0.4% Fisher skeleton, and random positions at the same budget.</p>
+<p data-l="zh"><b>持久核心</b>是这 0.4% 的骨架：五个里程碑（一阶段末、第二阶段、第三阶段、长上下文、中训模型）各自前 1% 的交集，也就是每一个里都进了前 1% 的坐标（12.37M，约 0.40%，主要是 GQA 里共享的 v/o 投影）。<b>同预算随机</b>在每个张量里保留同样的个数，只把选中的位置在张量内部打乱。</p>
+<p data-l="en">The <b>persistent core</b> is that 0.4% skeleton: the intersection of the top 1% at five milestones (end of stage 1, stage 2, stage 3, long context, and the mid-trained model). A coordinate has to be in the top 1% at every one of them (12.37M, about 0.40%, mostly the shared v/o projections in GQA). <b>Same-budget random</b> keeps the same count inside each tensor and shuffles which positions are chosen.</p>
+
+<div class="chartrow">
+<div class="chartcard">
+  <div class="chart-h">
+    <div class="t"><span data-l="zh">训练 reward</span><span data-l="en">Training reward</span></div>
+    <div class="s"><span data-l="zh">Dr.GRPO，0/1 math-verify reward · EMA 平滑</span><span data-l="en">Dr.GRPO, 0/1 math-verify reward · EMA-smoothed</span></div>
+  </div>
+  <div class="legend" id="lg-r1"></div>
+  <div class="plot" id="c-r1"></div>
+</div>
+
+<div class="chartcard">
+  <div class="chart-h">
+    <div class="t"><span data-l="zh">MATH-500 准确率</span><span data-l="en">MATH-500 accuracy</span></div>
+    <div class="s"><span data-l="zh">mean@4，T=1 · 每 50 步评测一次</span><span data-l="en">mean@4, T=1 · evaluated every 50 steps</span></div>
+  </div>
+  <div class="legend" id="lg-m1"></div>
+  <div class="plot" id="c-m1"></div>
+</div>
+
+<div class="chartcard">
+  <div class="chart-h">
+    <div class="t"><span data-l="zh">GSM8K 准确率</span><span data-l="en">GSM8K accuracy</span></div>
+    <div class="s"><span data-l="zh">mean@4，T=1 · 每 50 步评测一次</span><span data-l="en">mean@4, T=1 · evaluated every 50 steps</span></div>
+  </div>
+  <div class="legend" id="lg-g1"></div>
+  <div class="plot" id="c-g1"></div>
+</div>
+</div>
+
+<p class="note" data-l="zh">同样 0.4% 的预算，持久核心补回全参数收益的 88.8% / 88.8%（MATH / GSM），同预算随机只有 34.2% / 38.1%。MATH 上大约是随机的 2.6 倍，GSM 上大约 2.3 倍。随机并不是完全不动：它和核心有 12.75% 的位置碰巧重合，reward 也会涨，只是位置错了。起作用的是 Fisher 挑中的那些坐标（主要是 v/o），不是预算，也不是每个张量分到多少个。</p>
+<p class="note" data-l="en">At the same 0.4% budget, the persistent core recovers 88.8% / 88.8% of the full-parameter gain (MATH / GSM). Same-budget random recovers 34.2% / 38.1%: about 2.6&times; on MATH and 2.3&times; on GSM. Random is not frozen. It overlaps the core on 12.75% of positions by chance, and its reward does rise. The positions are just the wrong ones. What matters is which coordinates Fisher picks, mostly v/o, not the budget and not how many slots each tensor gets.</p>
+
+<table data-l="zh">
+<thead><tr><th>设置（0.4% 预算）</th><th>MATH-500</th><th>recovery</th><th>GSM8K</th><th>recovery</th></tr></thead>
+<tbody>
+<tr><td>全参数 RL（上限）</td><td>0.826</td><td>100%</td><td>0.893</td><td>100%</td></tr>
+<tr><td><b>持久核心 0.4%</b>（Fisher 骨架）</td><td>0.781</td><td><span class="hl">88.8%</span></td><td>0.861</td><td><span class="hl">88.8%</span></td></tr>
+<tr><td style="color:var(--rand)">同预算随机</td><td style="color:var(--rand)">0.563</td><td style="color:var(--rand)"><span class="hl">34.2%</span></td><td style="color:var(--rand)">0.717</td><td style="color:var(--rand)"><span class="hl">38.1%</span></td></tr>
+</tbody>
+</table>
+<table data-l="en">
+<thead><tr><th>Run (0.4% budget)</th><th>MATH-500</th><th>recovery</th><th>GSM8K</th><th>recovery</th></tr></thead>
+<tbody>
+<tr><td>full-param RL (ceiling)</td><td>0.826</td><td>100%</td><td>0.893</td><td>100%</td></tr>
+<tr><td><b>persistent core 0.4%</b> (Fisher skeleton)</td><td>0.781</td><td><span class="hl">88.8%</span></td><td>0.861</td><td><span class="hl">88.8%</span></td></tr>
+<tr><td style="color:var(--rand)">same-budget random</td><td style="color:var(--rand)">0.563</td><td style="color:var(--rand)"><span class="hl">34.2%</span></td><td style="color:var(--rand)">0.717</td><td style="color:var(--rand)"><span class="hl">38.1%</span></td></tr>
+</tbody>
+</table>
+
+<h2 data-l="zh"><span class="n">4</span>这些位置很早就定了：只用第一阶段结束时挑出的位置</h2>
+<h2 data-l="en"><span class="n">4</span>Identified early: using only positions picked at the end of stage 1</h2>
+<p data-l="zh">起作用的是 Fisher 挑中的位置，接下来看它们什么时候出现。形成曲线说得很早，这里直接测。用第一阶段结束、还没做推理中训的那个 checkpoint 的 Fisher，看两件事：</p>
+<p data-l="en">The positions Fisher picks are what matter, so the next question is when they appear. The formation curve says early. Here we test that. Take the Fisher at the end of stage 1, before reasoning mid-training, and check two things:</p>
+<p data-l="zh"><strong>(a) 一阶段末的模型自己能做数学 RL 吗？</strong>不能。全参数 RL 会塌：reward 一直贴在 0 附近（最高约 0.03），MATH-500 停在约 2.6%。没有可以强化的数学行为，这就是地板效应。</p>
+<p data-l="en"><strong>(a) Can the model at the end of stage 1 do math RL itself?</strong> No. Full-parameter RL collapses: reward stays near zero (peak about 0.03) and MATH-500 stays around 2.6%. There is no math behavior to reinforce. That is the floor.</p>
+<p data-l="zh"><strong>(b) 这些位置用在中训模型上，能训起来吗？</strong>能。recovery 是 85%（MATH）和 88%（GSM），中训模型自己挑的是 96% 和 95%，全参数是上限。一阶段末标出的位置已经对了，只是那个模型自己用不了。</p>
+<p data-l="en"><strong>(b) Do those positions train the mid-trained model?</strong> Yes. Recovery is 85% on MATH and 88% on GSM, against 96% and 95% for the positions the mid-trained model picks itself, with full-parameter RL as the ceiling. The end of stage 1 already marks the right positions. That model just cannot use them.</p>
+
+<div class="chartrow">
+<div class="chartcard">
+  <div class="chart-h">
+    <div class="t"><span data-l="zh">训练 reward</span><span data-l="en">Training reward</span></div>
+    <div class="s"><span data-l="zh">Dr.GRPO，0/1 math-verify reward · EMA 平滑</span><span data-l="en">Dr.GRPO, 0/1 math-verify reward · EMA-smoothed</span></div>
+  </div>
+  <div class="legend" id="lg-r2"></div>
+  <div class="plot" id="c-r2"></div>
+</div>
+
+<div class="chartcard">
+  <div class="chart-h">
+    <div class="t"><span data-l="zh">MATH-500 准确率</span><span data-l="en">MATH-500 accuracy</span></div>
+    <div class="s"><span data-l="zh">mean@4，T=1 · 每 50 步评测一次</span><span data-l="en">mean@4, T=1 · evaluated every 50 steps</span></div>
+  </div>
+  <div class="legend" id="lg-m2"></div>
+  <div class="plot" id="c-m2"></div>
+</div>
+
+<div class="chartcard">
+  <div class="chart-h">
+    <div class="t"><span data-l="zh">GSM8K 准确率</span><span data-l="en">GSM8K accuracy</span></div>
+    <div class="s"><span data-l="zh">mean@4，T=1 · 每 50 步评测一次</span><span data-l="en">mean@4, T=1 · evaluated every 50 steps</span></div>
+  </div>
+  <div class="legend" id="lg-g2"></div>
+  <div class="plot" id="c-g2"></div>
+</div>
+</div>
+
+<p data-l="zh">先看灰色虚线：一阶段末的模型做全参数 RL，reward 贴在 0 附近，所以 450 步就停了（没有可强化的行为。<b>✕</b> 标的是停下来的位置，曲线没有外推到 1000 步）。<span style="color:#1baf7a;font-weight:650">一阶段末挑出的位置用在中训模型上</span>，则和 <span style="color:#eb6834;font-weight:650">中训模型自己挑的</span>、<span style="color:#2a78d6;font-weight:650">全参数上限</span>一起上升。可用的位置在第一阶段结束时就能标出来，那个 checkpoint 自己并没有可用的数学能力。</p>
+<p data-l="en">The <span style="color:var(--muted)">dashed grey</span> line is the model at the end of stage 1 under full RL. Reward stays near zero, so the run stops at 450 steps: nothing to reinforce. The <b>✕</b> marks where it stopped; the curve is not extended to 1000. <span style="color:#1baf7a;font-weight:650">Positions picked at the end of stage 1, trained on the mid-trained model</span>, rise with <span style="color:#eb6834;font-weight:650">the positions that model picks itself</span> and the <span style="color:#2a78d6;font-weight:650">full-parameter ceiling</span>. The usable positions can be marked at the end of stage 1, on a checkpoint with no usable math ability.</p>
+
+<h3 data-l="zh">第 1000 步的 recovery（1% 预算）</h3>
+<h3 data-l="en">Recovery at step 1000 (1% budget)</h3>
+<p data-l="zh">recovery =（该组终值 − 初值）/（全参数终值 − 初值），分母是中训模型上的全参数 RL。表里的终值取第 1000 步；一阶段末那个模型自己的 RL 在 450 步已停，不进这个比例。</p>
+<p data-l="en">recovery = (final &minus; init) / (full final &minus; init). The denominator is full-parameter RL on the mid-trained model. Final values are step 1000. The collapsed run on the stage-1 model stopped at step 450 and is not a recovery number.</p>
+
+<table data-l="zh">
+<thead><tr><th>设置</th><th>MATH-500</th><th>recovery</th><th>GSM8K</th><th>recovery</th></tr></thead>
+<tbody>
+<tr><td>初值（中训模型，第 0 步）</td><td>0.427</td><td>—</td><td>0.609</td><td>—</td></tr>
+<tr><td>全参数 RL（上限）</td><td>0.826</td><td>100%</td><td>0.893</td><td>100%</td></tr>
+<tr><td>前 1%，中训模型自己挑的</td><td>0.812</td><td><span class="hl">96.5%</span></td><td>0.879</td><td><span class="hl">94.9%</span></td></tr>
+<tr><td>前 1%，<b>一阶段末挑的</b></td><td>0.767</td><td><span class="hl">85.2%</span></td><td>0.859</td><td><span class="hl">88.0%</span></td></tr>
+<tr><td style="color:var(--muted)">一阶段末的模型，全参数 RL</td><td style="color:var(--muted)">0.026</td><td style="color:var(--muted)">崩溃</td><td style="color:var(--muted)">0.027</td><td style="color:var(--muted)">崩溃</td></tr>
+</tbody>
+</table>
+<table data-l="en">
+<thead><tr><th>Run</th><th>MATH-500</th><th>recovery</th><th>GSM8K</th><th>recovery</th></tr></thead>
+<tbody>
+<tr><td>init (mid-trained model, step 0)</td><td>0.427</td><td>—</td><td>0.609</td><td>—</td></tr>
+<tr><td>full-parameter RL (ceiling)</td><td>0.826</td><td>100%</td><td>0.893</td><td>100%</td></tr>
+<tr><td>top 1%, picked by the mid-trained model</td><td>0.812</td><td><span class="hl">96.5%</span></td><td>0.879</td><td><span class="hl">94.9%</span></td></tr>
+<tr><td>top 1%, <b>picked at the end of stage 1</b></td><td>0.767</td><td><span class="hl">85.2%</span></td><td>0.859</td><td><span class="hl">88.0%</span></td></tr>
+<tr><td style="color:var(--muted)">model at the end of stage 1, full RL</td><td style="color:var(--muted)">0.026</td><td style="color:var(--muted)">collapsed</td><td style="color:var(--muted)">0.027</td><td style="color:var(--muted)">collapsed</td></tr>
+</tbody>
+</table>
+
+<p class="note" data-l="zh">一阶段末挑出的位置和中训模型自己的前 1% 只重合约 53%，recovery 仍有 85% / 88%。漏掉的大多贴着 1% 那条线：一个 checkpoint 里刚在线下，另一个里刚在线上。不是两套不同的结构。</p>
+<p class="note" data-l="en">Positions picked at the end of stage 1 overlap the mid-trained model's own top 1% on only about 53% of coordinates, and still recover 85% / 88%. Most of the misses sit on the 1% line: just under it in one checkpoint, just over it in the other. Not a different structure.</p>
+
+<h3 data-l="zh">题更难，补回的更少</h3>
+<h3 data-l="en">Harder problems recover less</h3>
+<p data-l="zh">上面的表是 MATH-500 和 GSM8K，mean@4。再加上 AMC 和 AIME（mean@16）。图上自己挑的 1% 是 96 / 95 / 84 / 69，持久核心是 89 / 89 / 79 / 64（MATH-500 / GSM8K / AMC / AIME）。到 AIME，1% 剩 69%，核心剩 64%。一阶段末挑的掉幅差不多，没有再画一条。掉下去的是「只留大约 1%」：难题还用到被丢掉的那些低 Fisher 坐标。同预算随机是 34 / 37 / 23 / 16，GSM 这一点比 MATH 略高，不是严格单调，但每个点都低一截。对这个模型，GSM8K 并不比 MATH-500 难（初值 0.61 对 0.43），横轴要到 AMC、AIME 才明显变难。AIME-2025 只有 30 题，噪声太大，没有放进来。</p>
+<p data-l="en">The tables above are MATH-500 and GSM8K at mean@4. Add AMC and AIME at mean@16. On the plot, the model's own 1% is 96 / 95 / 84 / 69 and the persistent core is 89 / 89 / 79 / 64 (MATH-500 / GSM8K / AMC / AIME). By AIME the 1% is down to 69% and the core to 64%. Positions from the end of stage 1 drop by about the same amount; they are not drawn again. What falls off is keeping only about 1%: harder problems still use the low-Fisher coordinates that were left out. Same-budget random is 34 / 37 / 23 / 16. GSM is a bit above MATH there, so it is not strictly monotone, but every point is well below the Fisher sets. For this model GSM8K is not harder than MATH-500 (init 0.61 versus 0.43). The axis gets clearly harder at AMC and AIME. AIME-2025 has only 30 problems and is too noisy to include.</p>
+
+<div class="fig">
+  <div class="plate"><svg style="width:100%;height:auto;display:block" viewBox="0 0 720 300" font-family="system-ui,sans-serif"><text x="54" y="16" font-size="12" fill="#666">recovery vs difficulty — same Fisher positions, harder benchmarks</text><line x1="54" y1="252.0" x2="600.0" y2="252.0" stroke="#eee"/><text x="45" y="256.0" font-size="11" fill="#555" text-anchor="end">0%</text><line x1="54" y1="195.0" x2="600.0" y2="195.0" stroke="#eee"/><text x="45" y="199.0" font-size="11" fill="#555" text-anchor="end">25%</text><line x1="54" y1="138.0" x2="600.0" y2="138.0" stroke="#eee"/><text x="45" y="142.0" font-size="11" fill="#555" text-anchor="end">50%</text><line x1="54" y1="81.0" x2="600.0" y2="81.0" stroke="#eee"/><text x="45" y="85.0" font-size="11" fill="#555" text-anchor="end">75%</text><line x1="54" y1="24.0" x2="600.0" y2="24.0" stroke="#eee"/><text x="45" y="28.0" font-size="11" fill="#555" text-anchor="end">100%</text><text x="54.0" y="274.0" font-size="12" fill="#333" text-anchor="middle">MATH-500</text><text x="236.0" y="274.0" font-size="12" fill="#333" text-anchor="middle">GSM8K</text><text x="418.0" y="274.0" font-size="12" fill="#333" text-anchor="middle">AMC</text><text x="600.0" y="274.0" font-size="12" fill="#333" text-anchor="middle">AIME</text><text x="327.0" y="296" font-size="11" fill="#999" text-anchor="middle">MATH-500 to AIME</text><text x="16" y="138.0" font-size="12" fill="#555" text-anchor="middle" transform="rotate(-90 16 138.0)">% of full RL recovered</text><line x1="54" y1="252.0" x2="600.0" y2="252.0" stroke="#c3c2b7" stroke-width="1.3"/><polyline points="54.0,32.0 236.0,35.9 418.0,60.0 600.0,94.2" fill="none" stroke="#eb6834" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="54.0" cy="32.0" r="2.8" fill="#eb6834"/><circle cx="236.0" cy="35.9" r="2.8" fill="#eb6834"/><circle cx="418.0" cy="60.0" r="2.8" fill="#eb6834"/><circle cx="600.0" cy="94.2" r="2.8" fill="#eb6834"/><polyline points="54.0,49.5 236.0,49.8 418.0,71.4 600.0,107.0" fill="none" stroke="#1baf7a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="54.0" cy="49.5" r="2.8" fill="#1baf7a"/><circle cx="236.0" cy="49.8" r="2.8" fill="#1baf7a"/><circle cx="418.0" cy="71.4" r="2.8" fill="#1baf7a"/><circle cx="600.0" cy="107.0" r="2.8" fill="#1baf7a"/><polyline points="54.0,175.2 236.0,167.6 418.0,200.0 600.0,216.0" fill="none" stroke="#6250d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 5"/><circle cx="54.0" cy="175.2" r="2.8" fill="#6250d6"/><circle cx="236.0" cy="167.6" r="2.8" fill="#6250d6"/><circle cx="418.0" cy="200.0" r="2.8" fill="#6250d6"/><circle cx="600.0" cy="216.0" r="2.8" fill="#6250d6"/><text x="608.0" y="98.2" font-size="11.5" fill="#eb6834" font-weight="600">own 1%</text><text x="608.0" y="112.2" font-size="11.5" fill="#1baf7a" font-weight="600">core 0.4%</text><text x="608.0" y="220.0" font-size="11.5" fill="#6250d6" font-weight="600">random 0.4%</text></svg></div>
+  <div class="cap" data-l="zh"><b>到 AMC、AIME，Fisher 位置补回的变少。</b>橙线是中训模型自己的 1%，绿线是持久核心，紫虚线是同预算随机。数字见上。AIME-2025（30 题）没有画。</div>
+  <div class="cap" data-l="en"><b>On AMC and AIME, the Fisher positions recover less.</b> Orange is the mid-trained model's own 1%, green is the persistent core, dashed purple is same-budget random. Numbers are in the text above. AIME-2025 (30 problems) is not shown.</div>
+</div>
+
+<h2 data-l="zh"><span class="n">5</span>这说明了什么</h2>
+<h2 data-l="en"><span class="n">5</span>What this means</h2>
+<p data-l="zh">形成曲线、一阶段末的位置搬到中训模型上、持久核心对同预算随机，三件事说的是同一件事。RL 用到的坐标在预训练前一段就定了，后面不再搬家。之后的预训练和 RL 改变的是这些坐标上的幅度：前 1% 的 Fisher 阈值沿轨迹大约涨了 100 倍。坐标本身没变。</p>
+<p data-l="en">The formation curve, moving the end-of-stage-1 positions onto the mid-trained model, and the persistent core against same-budget random are the same fact. The coordinates RL uses are fixed in the first part of pretraining and do not move after that. Later pretraining and RL change the magnitude on those coordinates: the top-1% Fisher threshold grows about 100&times; along the trajectory. The coordinates do not.</p>
+<p data-l="zh">所以只训练很少的 Fisher 位置仍然有效，是因为这些位置预训练时就已经在了，包括那些还做不了数学的 checkpoint。RL 没有现找一个任务子网络。</p>
+<p data-l="en">Training only a few Fisher positions still works because those positions were already there in pretraining, including in checkpoints that could not do math. RL is not finding a task subnetwork on the spot.</p>
+<p data-l="zh">因此 <a href="https://arxiv.org/abs/2609.36262">arXiv:2609.36262</a> 证明的是 Fisher 小则期望更新小，冻掉低 Fisher 坐标损失不大。这解释了更新为什么小，也解释了稀疏训练为什么够用。它没有解释敏感度为什么稀疏，也就是这些坐标为什么这么少、为什么是这些。那条不等式只限制每个坐标能动多远，不管它们怎么分布。这个分布是预训练里形成的，而且在第一阶段结束前就定了。</p>
+<p data-l="en">So <a href="https://arxiv.org/abs/2609.36262">arXiv:2609.36262</a> shows that a small Fisher means a small expected update, and that freezing low-Fisher coordinates costs little. That is why the updates are small, and why a sparse training set is enough. It does not say why the sensitivity is sparse: why so few coordinates, and why these. The inequality only limits how far each coordinate can move. It does not say how they are distributed. That distribution forms in pretraining, and it is already set by the end of stage 1.</p>
+
+<div id="appendix">
+<h2 data-l="zh">附录 · 前 1% 的模块构成</h2>
+<h2 data-l="en">Appendix · Module composition of the top 1%</h2>
+<p data-l="zh">前 1% 的质量在第一阶段从注意力转到 MLP：早期多在 <code>v_proj</code>，后来集中到激活特别大的 <code>down_proj</code>，之后基本不动。</p>
+<p data-l="en">During stage 1 the top-1% mass moves from attention to the MLP: mostly <code>v_proj</code> early, then a <code>down_proj</code> with very large activations. After that it barely moves.</p>
+
+<div class="fig">
+  <div class="plate"><svg style="width:100%;height:auto;display:block" viewBox="0 0 880 300" width="880" height="300" font-family="system-ui,sans-serif" ><text x="60" y="24" font-size="15" font-weight="700">SmolLM3-3B (GQA)</text><text x="60" y="40" font-size="11" fill="#777">init to the mid-trained model; o_proj revives in the stage-3 decay, not long context</text><polygon points="60.0,235.4 452.4,168.0 492.1,159.0 531.8,157.8 571.6,166.1 611.3,179.3 636.8,186.2 663.8,191.8 687.0,197.5 699.8,197.9 707.6,196.2 719.0,195.3 725.5,193.0 726.0,195.2 727.1,187.4 727.1,248.0 726.0,248.0 725.5,248.0 719.0,248.0 707.6,248.0 699.8,248.0 687.0,248.0 663.8,248.0 636.8,248.0 611.3,248.0 571.6,248.0 531.8,248.0 492.1,248.0 452.4,248.0 60.0,248.0" fill="#d73027" stroke="#fff" stroke-width="0.4"/><polygon points="60.0,210.3 452.4,140.7 492.1,133.1 531.8,133.2 571.6,140.2 611.3,149.1 636.8,153.6 663.8,158.4 687.0,161.4 699.8,162.3 707.6,160.6 719.0,160.5 725.5,134.2 726.0,135.1 727.1,119.9 727.1,187.4 726.0,195.2 725.5,193.0 719.0,195.3 707.6,196.2 699.8,197.9 687.0,197.5 663.8,191.8 636.8,186.2 611.3,179.3 571.6,166.1 531.8,157.8 492.1,159.0 452.4,168.0 60.0,235.4" fill="#fc8d59" stroke="#fff" stroke-width="0.4"/><polygon points="60.0,185.2 452.4,138.2 492.1,130.6 531.8,130.3 571.6,135.6 611.3,142.3 636.8,145.7 663.8,149.7 687.0,152.2 699.8,152.8 707.6,151.3 719.0,150.7 725.5,129.3 726.0,129.0 727.1,113.2 727.1,119.9 726.0,135.1 725.5,134.2 719.0,160.5 707.6,160.6 699.8,162.3 687.0,161.4 663.8,158.4 636.8,153.6 611.3,149.1 571.6,140.2 531.8,133.2 492.1,133.1 452.4,140.7 60.0,210.3" fill="#4575b4" stroke="#fff" stroke-width="0.4"/><polygon points="60.0,178.9 452.4,126.7 492.1,125.1 531.8,126.3 571.6,129.4 611.3,134.9 636.8,138.2 663.8,141.9 687.0,143.7 699.8,144.4 707.6,143.3 719.0,142.5 725.5,127.2 726.0,126.6 727.1,110.6 727.1,113.2 726.0,129.0 725.5,129.3 719.0,150.7 707.6,151.3 699.8,152.8 687.0,152.2 663.8,149.7 636.8,145.7 611.3,142.3 571.6,135.6 531.8,130.3 492.1,130.6 452.4,138.2 60.0,185.2" fill="#91bfdb" stroke="#fff" stroke-width="0.4"/><polygon points="60.0,69.1 452.4,100.7 492.1,94.5 531.8,88.5 571.6,81.6 611.3,78.8 636.8,76.9 663.8,77.0 687.0,76.7 699.8,75.1 707.6,75.4 719.0,75.1 725.5,68.5 726.0,68.5 727.1,65.5 727.1,110.6 726.0,126.6 725.5,127.2 719.0,142.5 707.6,143.3 699.8,144.4 687.0,143.7 663.8,141.9 636.8,138.2 611.3,134.9 571.6,129.4 531.8,126.3 492.1,125.1 452.4,126.7 60.0,178.9" fill="#1a9850" stroke="#fff" stroke-width="0.4"/><polygon points="60.0,64.0 452.4,64.8 492.1,64.8 531.8,64.9 571.6,64.9 611.3,64.9 636.8,64.9 663.8,64.9 687.0,64.9 699.8,64.9 707.6,64.9 719.0,64.9 725.5,64.6 726.0,64.5 727.1,64.6 727.1,65.5 726.0,68.5 725.5,68.5 719.0,75.1 707.6,75.4 699.8,75.1 687.0,76.7 663.8,77.0 636.8,76.9 611.3,78.8 571.6,81.6 531.8,88.5 492.1,94.5 452.4,100.7 60.0,69.1" fill="#984ea3" stroke="#fff" stroke-width="0.4"/><polygon points="60.0,64.0 452.4,64.0 492.1,64.0 531.8,64.0 571.6,64.0 611.3,64.0 636.8,64.0 663.8,64.0 687.0,64.0 699.8,64.0 707.6,64.0 719.0,64.0 725.5,64.0 726.0,64.0 727.1,64.0 727.1,64.6 726.0,64.5 725.5,64.6 719.0,64.9 707.6,64.9 699.8,64.9 687.0,64.9 663.8,64.9 636.8,64.9 611.3,64.9 571.6,64.9 531.8,64.9 492.1,64.8 452.4,64.8 60.0,64.0" fill="#bbbbbb" stroke="#fff" stroke-width="0.4"/><polygon points="60.0,64.0 452.4,64.0 492.1,64.0 531.8,64.0 571.6,64.0 611.3,64.0 636.8,64.0 663.8,64.0 687.0,64.0 699.8,64.0 707.6,64.0 719.0,64.0 725.5,64.0 726.0,64.0 727.1,64.0 727.1,64.0 726.0,64.0 725.5,64.0 719.0,64.0 707.6,64.0 699.8,64.0 687.0,64.0 663.8,64.0 636.8,64.0 611.3,64.0 571.6,64.0 531.8,64.0 492.1,64.0 452.4,64.0 60.0,64.0" fill="#eeeeee" stroke="#fff" stroke-width="0.4"/><text x="54" y="252" font-size="11" fill="#555" text-anchor="end">0%</text><text x="54" y="215" font-size="11" fill="#555" text-anchor="end">20%</text><text x="54" y="178" font-size="11" fill="#555" text-anchor="end">40%</text><text x="54" y="142" font-size="11" fill="#555" text-anchor="end">60%</text><text x="54" y="105" font-size="11" fill="#555" text-anchor="end">80%</text><text x="54" y="68" font-size="11" fill="#555" text-anchor="end">100%</text><text x="60" y="264" font-size="10" fill="#555" text-anchor="middle">init</text><text x="192" y="264" font-size="10" fill="#555" text-anchor="middle">1B</text><text x="324" y="264" font-size="10" fill="#555" text-anchor="middle">10B</text><text x="456" y="264" font-size="10" fill="#555" text-anchor="middle">100B</text><text x="588" y="264" font-size="10" fill="#555" text-anchor="middle">1T</text><text x="720" y="264" font-size="10" fill="#555" text-anchor="middle">10T</text><text x="395" y="294" font-size="11" text-anchor="middle">training tokens (log)</text><rect x="746" y="68" width="12" height="12" fill="#d73027"/><text x="762" y="78" font-size="11">v_proj</text><rect x="746" y="86" width="12" height="12" fill="#fc8d59"/><text x="762" y="96" font-size="11">o_proj</text><rect x="746" y="104" width="12" height="12" fill="#4575b4"/><text x="762" y="114" font-size="11">q_proj</text><rect x="746" y="122" width="12" height="12" fill="#91bfdb"/><text x="762" y="132" font-size="11">k_proj</text><rect x="746" y="140" width="12" height="12" fill="#1a9850"/><text x="762" y="150" font-size="11">mlp</text><rect x="746" y="158" width="12" height="12" fill="#984ea3"/><text x="762" y="168" font-size="11">embed</text><rect x="746" y="176" width="12" height="12" fill="#bbbbbb"/><text x="762" y="186" font-size="11">norm</text><rect x="746" y="194" width="12" height="12" fill="#eeeeee"/><text x="762" y="204" font-size="11">other</text></svg></div>
+  <div class="cap" data-l="zh"><b>前 1% 落在哪些模块里，随训练 token（对数）变化。</b>早期主要是 value 投影，大约 100B token 之后 Fisher 质量转到 MLP 的 <code>down_proj</code>，第一阶段结束前就定了。最右边 <code>o_proj</code> 的回升发生在第三阶段的学习率衰减，不是长上下文。</div>
+  <div class="cap" data-l="en"><b>Which modules hold the top 1%, against training tokens (log).</b> Value projections dominate early. After about 100B tokens the Fisher mass moves to MLP <code>down_proj</code>, and the mix is set before stage 1 ends. The <code>o_proj</code> rise at the far right is the stage-3 learning-rate decay, not long context.</div>
+</div>
+
+</div>
+
+<div class="foot">
+  <span data-l="zh">SmolLM3-3B 的 checkpoint 来自 <code>HuggingFaceTB/SmolLM3-3B-checkpoints</code>。做法沿用 arXiv:2609.36262，只训练固定下来的坐标，Fisher 是 on-policy 对角。曲线都是训练日志，不是拟合。 <span class="pill">在图上拖动可看数值</span></span>
+  <span data-l="en">SmolLM3-3B checkpoints are from <code>HuggingFaceTB/SmolLM3-3B-checkpoints</code>. The setup follows
+  arXiv:2609.36262: train a fixed set of coordinates, with on-policy diagonal Fisher. The curves are training logs, not fits. <span class="pill">drag on a chart to read values</span></span>
+</div>
+
+</div>
+
+<script id="cdata" type="application/json">{"smol3_mid_full":{"reward_step":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355,360,365,370,375,380,385,390,395,400,405,410,415,420,425,430,435,440,445,450,455,460,465,470,475,480,485,490,495,500,505,510,515,520,525,530,535,540,545,550,555,560,565,570,575,580,585,590,595,600,605,610,615,620,625,630,635,640,645,650,655,660,665,670,675,680,685,690,695,700,705,710,715,720,725,730,735,740,745,750,755,760,765,770,775,780,785,790,795,800,805,810,815,820,825,830,835,840,845,850,855,860,865,870,875,880,885,890,895,900,905,910,915,920,925,930,935,940,945,950,955,960,965,970,975,980,985,990,995,999],"reward":[0.3438,0.3493,0.371,0.4048,0.4457,0.437,0.4522,0.4173,0.4092,0.4374,0.4155,0.4721,0.4814,0.4819,0.5207,0.5237,0.6009,0.6764,0.6775,0.6915,0.668,0.6627,0.6473,0.7006,0.6997,0.7035,0.7265,0.7266,0.7046,0.7053,0.7276,0.6934,0.7022,0.689,0.7158,0.7105,0.7197,0.7057,0.7342,0.7526,0.7583,0.7584,0.7582,0.7525,0.7665,0.7481,0.7617,0.7584,0.7488,0.7627,0.7465,0.7775,0.8065,0.7391,0.6963,0.7464,0.7307,0.7384,0.7606,0.7631,0.7606,0.7746,0.7495,0.7591,0.782,0.7559,0.7642,0.7685,0.7914,0.7996,0.7943,0.7533,0.7507,0.7365,0.7566,0.7538,0.7208,0.7792,0.7422,0.7463,0.7444,0.765,0.7565,0.7542,0.7933,0.8229,0.8138,0.8138,0.8013,0.7518,0.8066,0.8203,0.8342,0.7972,0.8137,0.8272,0.8155,0.7833,0.7785,0.7743,0.7384,0.7808,0.8165,0.823,0.8144,0.7869,0.8212,0.818,0.8403,0.779,0.8152,0.745,0.7702,0.788,0.8008,0.7882,0.7948,0.8256,0.8211,0.8206,0.8552,0.851,0.8699,0.8566,0.8445,0.8506,0.8358,0.8333,0.7798,0.8037,0.8405,0.8037,0.8366,0.8019,0.8119,0.8425,0.8524,0.8251,0.848,0.8191,0.8132,0.7875,0.746,0.7712,0.8063,0.8386,0.8275,0.8209,0.827,0.8134,0.8539,0.8626,0.8489,0.842,0.8332,0.8257,0.815,0.7935,0.8029,0.8118,0.8094,0.8205,0.7901,0.822,0.8102,0.8429,0.8509,0.8191,0.801,0.7612,0.7671,0.7591,0.7921,0.7947,0.7984,0.7801,0.8171,0.8217,0.8375,0.8076,0.844,0.8094,0.8515,0.7931,0.8026,0.841,0.8661,0.8096,0.825,0.8248,0.7723,0.7977,0.8162,0.7943,0.8065,0.8393,0.8225,0.8487,0.8758,0.8655,0.8412],"math_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"math":[0.4265,0.517,0.669,0.741,0.7535,0.773,0.792,0.8005,0.813,0.8255,0.827,0.836,0.836,0.831,0.8505,0.8515,0.8505,0.849,0.844,0.841,0.8255],"gsm_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"gsm":[0.6088,0.6738,0.7735,0.8279,0.858,0.8567,0.8723,0.8789,0.8798,0.8886,0.8901,0.8914,0.8963,0.8942,0.9016,0.9031,0.9031,0.8937,0.8967,0.8986,0.8931]},"smol3_itmid_fisher1":{"reward_step":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355,360,365,370,375,380,385,390,395,400,405,410,415,420,425,430,435,440,445,450,455,460,465,470,475,480,485,490,495,500,505,510,515,520,525,530,535,540,545,550,555,560,565,570,575,580,585,590,595,600,605,610,615,620,625,630,635,640,645,650,655,660,665,670,675,680,685,690,695,700,705,710,715,720,725,730,735,740,745,750,755,760,765,770,775,780,785,790,795,800,805,810,815,820,825,830,835,840,845,850,855,860,865,870,875,880,885,890,895,900,905,910,915,920,925,930,935,940,945,950,955,960,965,970,975,980,985,990,995,999],"reward":[0.4375,0.4012,0.4131,0.4388,0.4208,0.3907,0.4131,0.3825,0.3721,0.403,0.356,0.3965,0.4049,0.4248,0.4495,0.4274,0.4785,0.5484,0.5296,0.5017,0.486,0.4951,0.4433,0.4789,0.469,0.4574,0.4931,0.4774,0.4279,0.4477,0.4657,0.446,0.4542,0.4484,0.4632,0.4455,0.4843,0.4979,0.529,0.5193,0.5177,0.5272,0.5437,0.5357,0.5778,0.5355,0.528,0.5111,0.5188,0.5412,0.5574,0.5771,0.5954,0.5404,0.5341,0.52,0.5272,0.5316,0.5485,0.5389,0.5471,0.5877,0.5647,0.5817,0.6104,0.5901,0.6083,0.5605,0.5966,0.6082,0.6227,0.572,0.5834,0.5793,0.6041,0.6012,0.6039,0.6335,0.5912,0.5942,0.6147,0.6211,0.6313,0.644,0.6749,0.6847,0.6439,0.6682,0.6579,0.6366,0.6646,0.6883,0.7023,0.6627,0.7039,0.7161,0.7011,0.6553,0.6791,0.677,0.6471,0.668,0.7126,0.6961,0.7213,0.7031,0.7313,0.7211,0.7373,0.6651,0.7017,0.632,0.6531,0.6816,0.6914,0.6745,0.6835,0.7178,0.7435,0.759,0.7937,0.7907,0.807,0.771,0.7584,0.7769,0.7739,0.7568,0.7021,0.7229,0.7677,0.7295,0.7451,0.7124,0.7361,0.7655,0.7763,0.7592,0.7668,0.7265,0.729,0.7106,0.675,0.6892,0.7201,0.7557,0.75,0.7492,0.733,0.7287,0.7735,0.7882,0.7306,0.7352,0.7392,0.7368,0.74,0.7415,0.7301,0.7442,0.7364,0.7752,0.7321,0.729,0.736,0.7797,0.7862,0.7789,0.7724,0.7325,0.7084,0.6996,0.7379,0.7491,0.7707,0.723,0.7651,0.7657,0.7554,0.7198,0.7701,0.7548,0.7782,0.7359,0.7251,0.7786,0.7922,0.7501,0.7719,0.7618,0.7207,0.7499,0.7662,0.7502,0.7574,0.7899,0.7727,0.8146,0.8405,0.8146,0.8037],"math_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"math":[0.4225,0.4555,0.4705,0.4975,0.544,0.5655,0.5985,0.638,0.6525,0.6875,0.7155,0.732,0.7485,0.768,0.762,0.786,0.797,0.803,0.799,0.81,0.8115],"gsm_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"gsm":[0.6067,0.6281,0.6418,0.6677,0.706,0.7151,0.7343,0.7612,0.7877,0.7926,0.8201,0.8287,0.845,0.8508,0.8556,0.8613,0.8685,0.8734,0.8717,0.8777,0.8787]},"smol3_itmid_s1emask":{"reward_step":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355,360,365,370,375,380,385,390,395,400,405,410,415,420,425,430,435,440,445,450,455,460,465,470,475,480,485,490,495,500,505,510,515,520,525,530,535,540,545,550,555,560,565,570,575,580,585,590,595,600,605,610,615,620,625,630,635,640,645,650,655,660,665,670,675,680,685,690,695,700,705,710,715,720,725,730,735,740,745,750,755,760,765,770,775,780,785,790,795,800,805,810,815,820,825,830,835,840,845,850,855,860,865,870,875,880,885,890,895,900,905,910,915,920,925,930,935,940,945,950,955,960,965,970,975,980,985,990,995,999],"reward":[0.3125,0.339,0.3359,0.3966,0.4018,0.383,0.401,0.3787,0.3771,0.3859,0.3486,0.4156,0.4268,0.4314,0.4511,0.3955,0.4664,0.5225,0.5166,0.4823,0.4864,0.4833,0.4651,0.4735,0.4612,0.4699,0.4821,0.4581,0.4149,0.4502,0.4633,0.4487,0.4372,0.4244,0.4448,0.4343,0.4666,0.4589,0.4523,0.4618,0.4664,0.489,0.5056,0.4931,0.5117,0.4588,0.4681,0.4841,0.5052,0.5381,0.5297,0.5568,0.5536,0.4986,0.5014,0.5215,0.5225,0.5289,0.5545,0.5484,0.5434,0.5646,0.5475,0.5557,0.5783,0.5737,0.6016,0.5626,0.5984,0.5892,0.6067,0.5469,0.5609,0.5572,0.5844,0.5722,0.5921,0.6193,0.5695,0.6103,0.5856,0.6001,0.6128,0.6242,0.6373,0.6572,0.6436,0.6455,0.6525,0.5973,0.6256,0.6521,0.6704,0.6266,0.6325,0.6383,0.6478,0.6195,0.6485,0.6379,0.6238,0.634,0.6663,0.6605,0.6476,0.6411,0.7013,0.6993,0.6808,0.6477,0.6615,0.6102,0.6272,0.6603,0.6656,0.6523,0.6439,0.6795,0.6996,0.6986,0.737,0.745,0.7568,0.7272,0.7439,0.7285,0.7289,0.7094,0.6744,0.6815,0.7507,0.7145,0.7302,0.7132,0.6851,0.704,0.7317,0.7012,0.7201,0.6934,0.6927,0.6838,0.6518,0.6577,0.6899,0.689,0.6958,0.7163,0.7211,0.6982,0.7342,0.7623,0.7163,0.7158,0.7337,0.7105,0.7056,0.6921,0.7063,0.7296,0.7236,0.7412,0.7203,0.7225,0.7166,0.7596,0.7611,0.7199,0.7186,0.6867,0.6635,0.6435,0.6863,0.6956,0.7081,0.6856,0.7245,0.7283,0.7234,0.6729,0.7277,0.7219,0.7658,0.7079,0.7216,0.7778,0.7864,0.7289,0.7221,0.7337,0.6815,0.7306,0.7472,0.7102,0.7377,0.77,0.7362,0.7752,0.8062,0.7676,0.7579],"math_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"math":[0.435,0.4505,0.459,0.475,0.5105,0.5505,0.575,0.6125,0.659,0.671,0.6805,0.702,0.7195,0.7215,0.7455,0.7465,0.7585,0.7575,0.7555,0.764,0.7665],"gsm_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"gsm":[0.6259,0.6338,0.6505,0.6535,0.6812,0.7172,0.7263,0.7551,0.7794,0.7822,0.7879,0.7989,0.8141,0.8309,0.8397,0.851,0.8558,0.8533,0.858,0.8537,0.859]},"smol3_s1e_full":{"reward_step":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355,360,365,370,375,380,385,390,395,400,405,410,415,420,425,430,435,440,445,450],"reward":[0.0,0.0,0.0121,0.0211,0.0139,0.0175,0.0179,0.0164,0.0126,0.0108,0.0094,0.011,0.0111,0.0073,0.0151,0.0099,0.0129,0.0163,0.0155,0.0152,0.0229,0.0188,0.0145,0.0115,0.0101,0.013,0.0173,0.0177,0.0156,0.0203,0.0203,0.0134,0.0088,0.0106,0.0114,0.0119,0.0162,0.0174,0.0205,0.0217,0.0143,0.0139,0.0116,0.0114,0.0134,0.0131,0.0227,0.0192,0.0172,0.0114,0.0119,0.0272,0.03,0.0235,0.0332,0.0299,0.0257,0.0277,0.0245,0.0182,0.012,0.0097,0.0105,0.009,0.008,0.0053,0.012,0.0136,0.0179,0.0118,0.0101,0.0116,0.0077,0.005,0.0056,0.0057,0.0087,0.0142,0.0094,0.0062,0.0041,0.0066,0.014,0.0133,0.0175,0.0188,0.0186,0.0249,0.0244,0.0184,0.0201],"math_step":[0,50,100,150,200,250,300,350,400,450],"math":[0.023,0.021,0.019,0.0225,0.0205,0.0275,0.0255,0.0195,0.014,0.026],"gsm_step":[0,50,100,150,200,250,300,350,400,450],"gsm":[0.0269,0.0258,0.0252,0.0203,0.0256,0.0254,0.0296,0.0231,0.0267,0.0269]},"smol3_itmid_persistcore":{"reward_step":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355,360,365,370,375,380,385,390,395,400,405,410,415,420,425,430,435,440,445,450,455,460,465,470,475,480,485,490,495,500,505,510,515,520,525,530,535,540,545,550,555,560,565,570,575,580,585,590,595,600,605,610,615,620,625,630,635,640,645,650,655,660,665,670,675,680,685,690,695,700,705,710,715,720,725,730,735,740,745,750,755,760,765,770,775,780,785,790,795,800,805,810,815,820,825,830,835,840,845,850,855,860,865,870,875,880,885,890,895,900,905,910,915,920,925,930,935,940,945,950,955,960,965,970,975,980,985,990,995,999],"reward":[0.4688,0.42,0.4077,0.4371,0.437,0.3959,0.4008,0.3443,0.3593,0.3908,0.3536,0.415,0.4162,0.4079,0.4196,0.3923,0.4514,0.5148,0.5065,0.46,0.4628,0.4714,0.4783,0.5012,0.4663,0.4741,0.4997,0.4965,0.4549,0.4436,0.4515,0.4382,0.4279,0.4189,0.4415,0.4415,0.4538,0.4466,0.4522,0.4608,0.4461,0.4687,0.4882,0.473,0.5109,0.4848,0.4759,0.4834,0.4595,0.4853,0.4966,0.5231,0.5372,0.4883,0.4576,0.4998,0.4937,0.5056,0.5342,0.5097,0.5297,0.5408,0.5249,0.5282,0.5481,0.5485,0.5501,0.5425,0.5663,0.5598,0.5667,0.5085,0.5156,0.4877,0.5456,0.5053,0.5145,0.5119,0.4703,0.495,0.5122,0.4984,0.5388,0.5546,0.5669,0.5754,0.5639,0.5792,0.6111,0.5515,0.5783,0.621,0.6231,0.5956,0.6209,0.6377,0.64,0.5744,0.5973,0.5743,0.5603,0.5638,0.6212,0.626,0.6268,0.6169,0.6702,0.6754,0.6785,0.6023,0.633,0.5833,0.6013,0.6358,0.6401,0.6011,0.6224,0.6606,0.6815,0.6922,0.7212,0.7315,0.7541,0.7353,0.7045,0.6951,0.6972,0.6851,0.633,0.6809,0.721,0.6765,0.6977,0.6833,0.6679,0.6886,0.7148,0.6821,0.6969,0.6545,0.6643,0.6565,0.6453,0.6449,0.6846,0.681,0.6983,0.723,0.7153,0.6923,0.7221,0.7376,0.7048,0.7187,0.7238,0.7116,0.707,0.7127,0.7123,0.7125,0.7004,0.7298,0.6755,0.69,0.6906,0.7509,0.758,0.7318,0.7176,0.694,0.6665,0.6438,0.678,0.6906,0.7009,0.677,0.707,0.7202,0.719,0.6935,0.7273,0.7165,0.7407,0.6966,0.7057,0.7528,0.796,0.7354,0.7344,0.734,0.6995,0.7398,0.7628,0.7226,0.7526,0.7747,0.7484,0.795,0.8124,0.7931,0.7853],"math_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"math":[0.4295,0.4415,0.4585,0.487,0.51,0.523,0.55,0.5685,0.5835,0.613,0.623,0.6395,0.686,0.705,0.7335,0.7345,0.7495,0.7565,0.761,0.778,0.781],"gsm_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"gsm":[0.6272,0.6266,0.6401,0.6598,0.6768,0.6857,0.7117,0.7299,0.7437,0.7564,0.7644,0.787,0.8019,0.8097,0.8234,0.8345,0.8442,0.847,0.8487,0.8541,0.8614]},"smol3_itmid_rand04":{"reward_step":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355,360,365,370,375,380,385,390,395,400,405,410,415,420,425,430,435,440,445,450,455,460,465,470,475,480,485,490,495,500,505,510,515,520,525,530,535,540,545,550,555,560,565,570,575,580,585,590,595,600,605,610,615,620,625,630,635,640,645,650,655,660,665,670,675,680,685,690,695,700,705,710,715,720,725,730,735,740,745,750,755,760,765,770,775,780,785,790,795,800,805,810,815,820,825,830,835,840,845,850,855,860,865,870,875,880,885,890,895,900,905,910,915,920,925,930,935,940,945,950,955,960,965,970,975,980,985,990,995,999],"reward":[0.5,0.4704,0.4472,0.478,0.4651,0.4136,0.421,0.3755,0.3536,0.3828,0.3542,0.4025,0.4089,0.3936,0.4211,0.3904,0.4553,0.4986,0.4944,0.4781,0.4714,0.4481,0.4596,0.4578,0.4396,0.4528,0.4577,0.4398,0.4003,0.4094,0.4218,0.3843,0.373,0.3689,0.375,0.388,0.4287,0.399,0.4189,0.4056,0.4105,0.4368,0.4288,0.4064,0.4718,0.4229,0.4199,0.4146,0.4221,0.4294,0.426,0.4447,0.4565,0.4097,0.4028,0.4277,0.44,0.4574,0.4702,0.4683,0.4277,0.4602,0.4656,0.45,0.4501,0.419,0.4462,0.4395,0.4638,0.4588,0.4597,0.4086,0.4023,0.387,0.3953,0.3958,0.3882,0.428,0.3956,0.4069,0.4272,0.4182,0.4184,0.4121,0.4424,0.443,0.4301,0.4442,0.476,0.412,0.4276,0.457,0.4603,0.4338,0.4409,0.4605,0.4601,0.4324,0.4879,0.4688,0.4246,0.4561,0.4654,0.4747,0.4702,0.4683,0.5102,0.5216,0.5031,0.4709,0.5051,0.4347,0.4318,0.4482,0.4579,0.4105,0.4086,0.4567,0.4742,0.4751,0.5222,0.5075,0.508,0.5154,0.507,0.5321,0.518,0.4628,0.4159,0.4534,0.4956,0.4627,0.475,0.4621,0.434,0.4631,0.4902,0.4626,0.4992,0.4753,0.4847,0.5031,0.4857,0.4673,0.4603,0.4701,0.4754,0.5043,0.4831,0.4562,0.4929,0.5136,0.4829,0.4826,0.5188,0.5048,0.5062,0.5054,0.5082,0.4991,0.5036,0.5371,0.4856,0.4775,0.4778,0.5218,0.5309,0.4893,0.4951,0.5086,0.506,0.4769,0.4991,0.4768,0.4695,0.4439,0.4794,0.5043,0.5035,0.5016,0.513,0.5152,0.4991,0.4795,0.4991,0.5785,0.599,0.5579,0.5352,0.5039,0.4649,0.5061,0.5077,0.487,0.532,0.5742,0.5691,0.5801,0.5721,0.5448,0.5695],"math_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"math":[0.4355,0.431,0.4535,0.4605,0.4325,0.4635,0.4765,0.451,0.466,0.485,0.4715,0.4955,0.502,0.4885,0.525,0.5245,0.56,0.5605,0.544,0.58,0.563],"gsm_step":[0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000],"gsm":[0.6198,0.6143,0.6283,0.6427,0.644,0.6367,0.6403,0.6499,0.648,0.6566,0.6543,0.6619,0.6666,0.6795,0.6948,0.6943,0.6962,0.6962,0.7074,0.7075,0.717]}}</script>
+<script>
+(function(){
+  "use strict";
+  var DATA = JSON.parse(document.getElementById('cdata').textContent);
+  var root = document.documentElement;
+  var PAL = {
+    light:{s1:'#2a78d6',s2:'#eb6834',s3:'#1baf7a',vio:'#6250d6',red:'#e34948',mut:'#898781',grid:'#e1e0d9',axis:'#c3c2b7',ink:'#0b0b0b',ink2:'#52514e'},
+    dark :{s1:'#3987e5',s2:'#d95926',s3:'#199e70',vio:'#9085e9',red:'#e66767',mut:'#898781',grid:'#2c2c2a',axis:'#383835',ink:'#f0efec',ink2:'#c3c2b7'}
+  };
+  var META = {
+    'smol3_mid_full':         {name_en:'full-param (ceiling)',          name_zh:'全参数（上限）',               label_en:'full',          label_zh:'全参数'},
+    'smol3_itmid_fisher1':    {name_en:"top 1%, mid-trained model's own", name_zh:'前 1%，中训模型自己挑的', label_en:'own',    label_zh:'自己的'},
+    'smol3_itmid_s1emask':    {name_en:'top 1%, end of stage 1',         name_zh:'前 1%，一阶段末挑的',       label_en:'stage 1', label_zh:'一阶段末'},
+    'smol3_s1e_full':         {name_en:'end of stage 1, full RL',        name_zh:'一阶段末模型，全参数',       label_en:'early',   label_zh:'早期模型'},
+    'smol3_itmid_persistcore':{name_en:'persistent core, 0.4%',          name_zh:'持久核心 0.4%',            label_en:'core',    label_zh:'核心'},
+    'smol3_itmid_rand04':     {name_en:'same-budget random',             name_zh:'同预算随机',               label_en:'random',  label_zh:'随机'}
+  };
+  var G1 = [{k:'smol3_mid_full',pk:'s1'},{k:'smol3_itmid_persistcore',pk:'s3'},{k:'smol3_itmid_rand04',pk:'vio',dash:1}];
+  var G2 = [{k:'smol3_mid_full',pk:'s1'},{k:'smol3_itmid_fisher1',pk:'s2'},{k:'smol3_itmid_s1emask',pk:'s3'},{k:'smol3_s1e_full',pk:'mut',dash:1}];
+  var CHARTS = [
+    {mount:'c-r1', lg:'lg-r1', xk:'reward_step', yk:'reward', ymin:0, ymax:1, yt:[0,.25,.5,.75,1], xmax:1000, draw:G1, fmt:function(v){return v.toFixed(2);}},
+    {mount:'c-m1', lg:'lg-m1', xk:'math_step', yk:'math', ymin:0, ymax:.9, yt:[0,.2,.4,.6,.8], xmax:1000, dots:true, draw:G1, fmt:function(v){return (v*100).toFixed(1)+'%';}},
+    {mount:'c-g1', lg:'lg-g1', xk:'gsm_step', yk:'gsm', ymin:0, ymax:.95, yt:[0,.25,.5,.75], xmax:1000, dots:true, draw:G1, fmt:function(v){return (v*100).toFixed(1)+'%';}},
+    {mount:'c-r2', lg:'lg-r2', xk:'reward_step', yk:'reward', ymin:0, ymax:1, yt:[0,.25,.5,.75,1], xmax:1000, draw:G2, fmt:function(v){return v.toFixed(2);}},
+    {mount:'c-m2', lg:'lg-m2', xk:'math_step', yk:'math', ymin:0, ymax:.9, yt:[0,.2,.4,.6,.8], xmax:1000, dots:true, draw:G2, fmt:function(v){return (v*100).toFixed(1)+'%';}},
+    {mount:'c-g2', lg:'lg-g2', xk:'gsm_step', yk:'gsm', ymin:0, ymax:.95, yt:[0,.25,.5,.75], xmax:1000, dots:true, draw:G2, fmt:function(v){return (v*100).toFixed(1)+'%';}}
+  ];
+  var TXT = {en:{step:function(s){return 'step '+s;}, xlab:'RL step', stop:function(l,n){return l+' — terminated early at '+n;}},
+             zh:{step:function(s){return '第 '+s+' 步';}, xlab:'RL 步数', stop:function(l,n){return l+' — '+n+' 步提前终止';}}};
+  var SVGNS='http://www.w3.org/2000/svg';
+  function el(n,a){var e=document.createElementNS(SVGNS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  function theme(){return root.getAttribute('data-theme')==='dark'?'dark':'light';}
+  function lang(){return root.getAttribute('data-lang')==='en'?'en':'zh';}
+  function nameOf(k){return META[k]['name_'+lang()];}
+  function labelOf(k){return META[k]['label_'+lang()];}
+
+  function buildLegend(cfg){
+    var box=document.getElementById(cfg.lg); if(!box)return; box.innerHTML='';
+    var P=PAL[theme()];
+    cfg.draw.forEach(function(sp){
+      var c=P[sp.pk];
+      var it=document.createElement('span'); it.className='it';
+      var sw=document.createElement('span'); sw.className='sw';
+      sw.style.borderTopColor=c; if(sp.dash) sw.style.borderTopStyle='dashed';
+      var tx=document.createElement('span'); tx.textContent=nameOf(sp.k); tx.style.color='var(--ink2)';
+      it.appendChild(sw); it.appendChild(tx); box.appendChild(it);
+    });
+  }
+
+  function render(cfg){
+    var host=document.getElementById(cfg.mount); if(!host)return;
+    host.innerHTML='';
+    var P=PAL[theme()], L=TXT[lang()];
+    var W=host.clientWidth||740, narrow=W<460, H=narrow?210:228;
+    var m={t:6,r:narrow?64:92,b:narrow?40:46,l:narrow?34:40};
+    var pw=W-m.l-m.r, ph=H-m.t-m.b;
+    var xmax=cfg.xmax, ymin=cfg.ymin, ymax=cfg.ymax;
+    function X(v){return m.l + (v/xmax)*pw;}
+    function Y(v){return m.t + (1-(v-ymin)/(ymax-ymin))*ph;}
+    var svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',height:'auto',style:'display:block;font-family:system-ui,sans-serif'});
+
+    cfg.yt.forEach(function(v){
+      svg.appendChild(el('line',{x1:m.l,y1:Y(v),x2:m.l+pw,y2:Y(v),stroke:P.grid,'stroke-width':1}));
+      var t=el('text',{x:m.l-9,y:Y(v)+4,'font-size':11,fill:P.ink2,'text-anchor':'end'});
+      t.textContent=(cfg.yk==='reward')?v.toFixed(2):(v*100)+'%'; svg.appendChild(t);
+    });
+    (narrow?[0,500,1000]:[0,250,500,750,1000]).forEach(function(v){
+      svg.appendChild(el('line',{x1:X(v),y1:m.t,x2:X(v),y2:m.t+ph,stroke:P.grid,'stroke-width':1}));
+      var t=el('text',{x:X(v),y:m.t+ph+14,'font-size':11,fill:P.ink2,'text-anchor':'middle'});
+      t.textContent=v; svg.appendChild(t);
+    });
+    var xl=el('text',{x:m.l+pw/2,y:H-4,'font-size':12,fill:P.ink2,'text-anchor':'middle'});
+    xl.textContent=L.xlab; svg.appendChild(xl);
+
+    var endpts=[];
+    cfg.draw.forEach(function(sp){
+      var d=DATA[sp.k]; var xs=d[cfg.xk], ys=d[cfg.yk];
+      if(!xs||!xs.length) return;
+      var c=P[sp.pk];
+      var pts=xs.map(function(x,i){return X(x)+','+Y(ys[i]);}).join(' ');
+      var pl=el('polyline',{points:pts,fill:'none',stroke:c,'stroke-width':sp.ref?1.6:(sp.dash?2:2.4),'stroke-linejoin':'round','stroke-linecap':'round'});
+      if(sp.dash) pl.setAttribute('stroke-dasharray','6 5');
+      if(sp.ref) pl.setAttribute('opacity','0.85');
+      svg.appendChild(pl);
+      if(cfg.dots && !sp.dash && !sp.ref){ xs.forEach(function(x,i){ svg.appendChild(el('circle',{cx:X(x),cy:Y(ys[i]),r:2.6,fill:c})); }); }
+      var lx=X(xs[xs.length-1]), ly=Y(ys[ys.length-1]), lstep=xs[xs.length-1];
+      var collapsed = lstep < xmax*0.85;
+      if(collapsed){
+        svg.appendChild(el('path',{d:'M'+(lx-4.5)+','+(ly-4.5)+'l9,9 M'+(lx+4.5)+','+(ly-4.5)+'l-9,9',stroke:c,'stroke-width':1.8,'stroke-linecap':'round'}));
+        var nstop=Math.round(lstep/10)*10;
+        var tt=el('text',{x:Math.max(m.l+2,lx-9),y:ly-5,'font-size':11,fill:c,'font-weight':600,'text-anchor':'end'});
+        tt.textContent=narrow?(lang()==='zh'?nstop+' 步提前终止':'early stop '+nstop):L.stop(labelOf(sp.k), nstop); svg.appendChild(tt);
+      } else {
+        endpts.push({y:ly, c:c, label:labelOf(sp.k)});
+      }
+    });
+    endpts.sort(function(a,b){return a.y-b.y;});
+    for(var i=1;i<endpts.length;i++){ if(endpts[i].y-endpts[i-1].y<13) endpts[i].y=endpts[i-1].y+13; }
+    endpts.forEach(function(e){
+      var t=el('text',{x:m.l+pw+6,y:e.y+4,'font-size':narrow?10.5:11.5,fill:e.c,'font-weight':600}); t.textContent=e.label; svg.appendChild(t);
+    });
+
+    svg.appendChild(el('line',{x1:m.l,y1:m.t+ph,x2:m.l+pw,y2:m.t+ph,stroke:P.axis,'stroke-width':1.3}));
+    host.appendChild(svg);
+
+    var tip=document.createElement('div'); tip.className='tip'; host.appendChild(tip);
+    var cross=el('line',{x1:0,y1:m.t,x2:0,y2:m.t+ph,stroke:P.axis,'stroke-width':1,'stroke-dasharray':'3 3',opacity:0}); svg.appendChild(cross);
+    var dots=cfg.draw.map(function(){return null;});
+    var over=el('rect',{x:m.l,y:m.t,width:pw,height:ph,fill:'transparent'}); svg.appendChild(over);
+    function invX(px){return Math.max(0,Math.min(xmax,(px-m.l)/pw*xmax));}
+    over.addEventListener('mousemove',function(ev){
+      var r=svg.getBoundingClientRect();
+      var px=(ev.clientX-r.left)*(W/r.width);
+      var step=invX(px);
+      var ref=DATA['smol3_mid_full'][cfg.xk];
+      var si=0,bd=1e9; ref.forEach(function(xx,i){var dd=Math.abs(xx-step);if(dd<bd){bd=dd;si=i;}});
+      var sx=ref[si];
+      cross.setAttribute('x1',X(sx)); cross.setAttribute('x2',X(sx)); cross.setAttribute('opacity',1);
+      var rows='';
+      cfg.draw.forEach(function(sp,k){
+        var d=DATA[sp.k], xs=d[cfg.xk], ys=d[cfg.yk];
+        if(!xs||!xs.length){return;}
+        var bi=0,b2=1e9; xs.forEach(function(xx,i){var dd=Math.abs(xx-sx);if(dd<b2){b2=dd;bi=i;}});
+        if(b2>60){ if(dots[k]){dots[k].setAttribute('opacity',0);} return; }
+        var vx=X(xs[bi]), vy=Y(ys[bi]), c=PAL[theme()][sp.pk];
+        if(!dots[k]){ dots[k]=el('circle',{r:4,'stroke':'#fff','stroke-width':1.5}); svg.insertBefore(dots[k],over); }
+        dots[k].setAttribute('cx',vx); dots[k].setAttribute('cy',vy); dots[k].setAttribute('fill',c); dots[k].setAttribute('opacity',1);
+        rows+='<div class="row"><span class="nm"><span class="dot" style="background:'+c+'"></span>'+nameOf(sp.k)+'</span><span class="v">'+cfg.fmt(ys[bi])+'</span></div>';
+      });
+      tip.innerHTML='<div class="ts">'+TXT[lang()].step(sx)+'</div>'+rows;
+      tip.style.opacity=1;
+      var tx=X(sx)+14; if(tx> W-170) tx=X(sx)-tip.offsetWidth-14;
+      tip.style.left=tx+'px'; tip.style.top=(m.t+6)+'px';
+    });
+    over.addEventListener('mouseleave',function(){
+      tip.style.opacity=0; cross.setAttribute('opacity',0);
+      dots.forEach(function(d){if(d)d.setAttribute('opacity',0);});
+    });
+  }
+
+  function renderAll(){ CHARTS.forEach(function(c){buildLegend(c);render(c);}); }
+
+  var tb=document.getElementById('themebtn');
+  var st=null; try{st=localStorage.getItem('viz-theme');}catch(e){}
+  if(st==='dark'||(!st&&window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches)) root.setAttribute('data-theme','dark');
+  tb.addEventListener('click',function(){
+    var d=theme()==='dark'; root.setAttribute('data-theme',d?'light':'dark');
+    try{localStorage.setItem('viz-theme',d?'light':'dark');}catch(e){}
+    renderAll();
+  });
+
+  var lb=document.getElementById('langbtn');
+  var sl=null; try{sl=localStorage.getItem('viz-lang');}catch(e){}
+  if(sl==='en'||sl==='zh'){ root.setAttribute('data-lang',sl); root.setAttribute('lang',sl); }
+  function syncLangBtn(){ lb.textContent = lang()==='en' ? '中文' : 'EN';
+    document.title = lang()==='en' ? "When do a language model's RL-usable parameters form?" : "RL 用到的参数是什么时候形成的"; }
+  syncLangBtn();
+  lb.addEventListener('click',function(){
+    var nx=lang()==='en'?'zh':'en'; root.setAttribute('data-lang',nx); root.setAttribute('lang',nx);
+    try{localStorage.setItem('viz-lang',nx);}catch(e){}
+    syncLangBtn(); renderAll();
+  });
+
+  var rt; window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(renderAll,150);});
+  renderAll();
+})();
+</script>
+</body>
+</html>
